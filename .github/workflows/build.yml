@@ -1,0 +1,44 @@
+name: Build MP4Box (Mini Build) for Windows
+
+on:
+  push:
+    branches:
+      - main  # 或者指定其他分支，取决于您的工作流触发需求
+
+jobs:
+  build:
+    runs-on: windows-latest  # 设置为 Windows 运行环境
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up MSYS2 (for building)
+        uses: msys2/setup-msys2-action@v1
+        with:
+          msystem: MINGW64  # 使用 MinGW64 来构建 MP4Box
+
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git make cmake mingw-w64-x86_64-toolchain
+
+      - name: Build MP4Box
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          mingw32-make
+
+      - name: Create ZIP for release
+        run: |
+          mkdir release
+          cp build/MP4Box.exe release/
+          cd release
+          zip mp4box-win.zip MP4Box.exe
+
+      - name: Upload release ZIP
+        uses: actions/upload-artifact@v3
+        with:
+          name: mp4box-win
+          path: release/mp4box-win.zip
