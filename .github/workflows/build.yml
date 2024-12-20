@@ -1,39 +1,40 @@
-name: Build MP4Box (Mini Build) for Windows
+name: Build MP4Box (Mini Build) for Windows (MSVC 14)
 
 on:
   push:
     branches:
-      - main  # 或者指定其他分支，取决于您的工作流触发需求
+      - main  # 可以根据需要指定其他分支
 
 jobs:
   build:
-    runs-on: windows-latest  # 设置为 Windows 运行环境
+    runs-on: windows-latest  # 使用 GitHub 提供的最新 Windows 环境
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2  # 拉取最新的代码
 
-      - name: Set up MSYS2 (for building)
-        uses: msys2/setup-msys2-action@v1
+      - name: Set up Visual Studio
+        uses: microsoft/setup-msbuild@v1  # 配置 Visual Studio 环境
         with:
-          msystem: MINGW64  # 使用 MinGW64 来构建 MP4Box
+          vs-version: '2019'  # 或指定其他版本，如 2017（MSVC 14 即为 2015 版）
 
-      - name: Install dependencies
+      - name: Install CMake
         run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm git make cmake mingw-w64-x86_64-toolchain
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'  # 安装 CMake
 
-      - name: Build MP4Box
+      - name: Build MP4Box using MSVC
         run: |
+          cd gpac  # 进入到 GPAC 项目根目录
           mkdir build
           cd build
-          cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-          mingw32-make
+          # 使用 MSVC 14 编译 GPAC，指定使用 msvc14 的 CMake 配置
+          cmake ..\build\msvc14 -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
 
       - name: Create ZIP for release
         run: |
           mkdir release
-          cp build/MP4Box.exe release/
+          copy build/MP4Box/Release/MP4Box.exe release/
           cd release
           zip mp4box-win.zip MP4Box.exe
 
